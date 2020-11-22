@@ -161,7 +161,7 @@ async function handleAuth() {
     if (!success) {
       const authUrl = await getAuthUrl()
       console.log(authUrl)
-      // window.location.replace(authUrl)
+      window.location.replace(authUrl)
     }
   }
 
