@@ -3,7 +3,7 @@
 const verifier = 'random_string_between_43_and_128_characters_long'
 const clientId = '5ae5e79b2e80418da0e233e415fe236b'
 
-const redirectUri = 'https://soviut.github.io/spotify-embed-test'
+const redirectUri = window.location.origin + window.location.pathname
 
 // Convenience fetch wrapper to auto call .json() on the response
 const $fetch = async (...args) => (await fetch(...args)).json()
@@ -144,42 +144,112 @@ async function refreshAccessToken(refreshToken) {
 }
 
 async function handleAuth() {
-  await handleCallback()
   const accessToken = getCookie('spotifyaccesstoken')
+  if (accessToken) return accessToken
 
-  if (!accessToken) {
-    const refreshToken = getCookie('spotifyrefreshtoken')
-
-    let success = false
-
-    if (refreshToken) {
-      success = await refreshAccessToken(refreshToken)
-      if (success) {
-        return getCookie('spotifyaccesstoken')
-      }
-    }
-    if (!success) {
-      const authUrl = await getAuthUrl()
-      console.log(authUrl)
-      window.location.replace(authUrl)
-    }
+  const refreshToken = getCookie('spotifyrefreshtoken')
+  if (refreshToken) {
+    const success = await refreshAccessToken(refreshToken)
+    if (success) return getCookie('spotifyaccesstoken')
   }
 
-  return accessToken
-}
+  const success = await handleCallback()
+  if (success) return getCookie('spotifyaccesstoken')
 
+  const authUrl = await getAuthUrl()
+  console.log(authUrl)
+  window.location.replace(authUrl)
+}
 
 async function run() {
-    const accessToken = await handleAuth()
-    console.log(accessToken)
+  accessToken = await handleAuth()
+  console.log(accessToken)
 
-    const devices = await $fetch('https://api.spotify.com/v1/me/player/devices', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    })
+  const devices = await $fetch('https://api.spotify.com/v1/me/player/devices', {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  })
 
-    console.log(devices)
+  console.log(devices)
 }
 
-run()
+const play = ({
+  spotify_uri,
+  playerInstance: {
+    _options: {
+      getOAuthToken,
+      id
+    }
+  }
+}) => {
+  getOAuthToken(access_token => {
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ uris: [spotify_uri] }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+      },
+    });
+  });
+};
+
+let sdkReady = false
+
+window.addEventListener('DOMContentLoaded', () =>{
+  document.getElementById('playBtn').addEventListener('click', async () => {
+    if (!sdkReady) {
+      alert('Spotify SDK not yet ready, try again shortly')
+      return
+    }
+    console.log('ready')
+    const accessToken = await handleAuth()
+
+    const player = new Spotify.Player({
+      name: 'Web Playback SDK',
+      getOAuthToken: cb => { cb(accessToken) }
+    })
+
+    // Error handling
+    player.addListener('initialization_error', ({ message }) => { console.error(message) })
+    player.addListener('authentication_error', ({ message }) => { console.error(message) })
+    player.addListener('account_error', ({ message }) => { console.error(message) })
+    player.addListener('playback_error', ({ message }) => { console.error(message) })
+
+    // Playback status update
+    player.addListener('player_state_changed', state => { console.log(state) })
+
+    // Ready
+    player.addListener('ready', ({ device_id }) => {
+      console.log('Ready with Device ID', device_id)
+
+      play({
+        playerInstance: player,
+        spotify_uri: 'spotify:track:7xGfFoTpQ2E7fRF5lN10tr',
+      })
+
+      document.getElementById('volumeSlider').addEventListener('change', (event) => {
+        fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${event.target.value}&device_id=${player._options.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+        })
+      })
+    })
+
+    // Not Ready
+    player.addListener('not_ready', ({ device_id }) => {
+      console.log('Device ID has gone offline', device_id)
+    })
+
+    player.connect()
+  })
+})
+
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+  sdkReady = true
+}

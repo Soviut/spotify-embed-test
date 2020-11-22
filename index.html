@@ -14,7 +14,12 @@
   <body>
     <h1>Spotify Embed</h1>
 
-    <iframe src="https://open.spotify.com/embed/album/1DFixLWuPkv3KT3TnV35m3" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+    <!-- <iframe src="https://open.spotify.com/embed/album/1DFixLWuPkv3KT3TnV35m3" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe> -->
+
+    <button id="playBtn">Play</button>
+    <input type="range" min="0" max="100" id="volumeSlider" />
+
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script src="index.js"></script>
   </body>
 </html>
