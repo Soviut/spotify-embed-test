@@ -3,6 +3,9 @@
 const verifier = 'random_string_between_43_and_128_characters_long'
 const clientId = '5ae5e79b2e80418da0e233e415fe236b'
 
+
+const redirectUri = window.location.origin
+
 // Convenience fetch wrapper to auto call .json() on the response
 const $fetch = async (...args) => (await fetch(...args)).json()
 
@@ -71,7 +74,7 @@ async function getAuthUrl() {
   const authUri = new URL('https://accounts.spotify.com/authorize')
   authUri.searchParams.append('client_id', clientId)
   authUri.searchParams.append('response_type','code')
-  authUri.searchParams.append('redirect_uri','http://localhost:3000')
+  authUri.searchParams.append('redirect_uri',redirectUri)
   authUri.searchParams.append('code_challenge_method','S256')
   authUri.searchParams.append('code_challenge',challenge)
   authUri.searchParams.append('state','anything')
@@ -105,7 +108,7 @@ async function handleCallback() {
         client_id: clientId,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: 'http://localhost:3000',
+        redirect_uri: redirectUri,
         code_verifier: verifier
       })
     }
