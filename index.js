@@ -3,8 +3,7 @@
 const verifier = 'random_string_between_43_and_128_characters_long'
 const clientId = '5ae5e79b2e80418da0e233e415fe236b'
 
-
-const redirectUri = window.location.href
+const redirectUri = 'https://soviut.github.io/spotify-embed-test'
 
 // Convenience fetch wrapper to auto call .json() on the response
 const $fetch = async (...args) => (await fetch(...args)).json()
@@ -162,7 +161,7 @@ async function handleAuth() {
     if (!success) {
       const authUrl = await getAuthUrl()
       console.log(authUrl)
-      window.location.replace(authUrl)
+      // window.location.replace(authUrl)
     }
   }
 
